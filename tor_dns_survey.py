@@ -6,7 +6,6 @@ import datetime
 
 guard = "F6740DEABFD5F62612FA025A5079EA72846B1F67"
 controller = stem.control.Controller.from_port(port = 9051)
-controller.authenticate("bilboBaggins789")
 
 #exit_results = {}
 
