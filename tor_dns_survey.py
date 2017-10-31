@@ -17,28 +17,29 @@ def record_exit_result(fingerprint, address, result, delta):
     dateString = str(datetime.datetime.now())
     exit_results[address][fingerprint].append((result, dateString, delta))
 
-def get_exits():
+def get_exit_fingerprints():
     relays = list(controller.get_server_descriptors())
-    return filter(lambda relay: relay.exit_policy.can_exit_to(port=80), relays)
+    exits = filter(lambda relay: relay.exit_policy.can_exit_to(port=80), relays)
+    return map(lambda exit: exit.fingerprint, exits)
 
 
 def test_http_request(address):
     """Attempt to connect to example.com through tor proxy,
        using remote DNS."""
     s = socks.socksocket()
-    s.settimeout(12)
+    s.settimeout(102)
     s.set_proxy(socks.SOCKS5, "localhost", 9050, True)
     s.connect((address, 80))
     s.sendall("GET / HTTP/1.1\nHost: www.example.com\n\n")
     return s.recv(4096)
 
-def test_exit(exit, address):
+def test_exit(fingerprint, address):
     start = time.time()
     try:
         controller.set_conf('CircuitBuildTimeout', '10')
-        circuit_id = controller.new_circuit([guard, exit.fingerprint], await_build = True)
+        circuit_id = controller.new_circuit([guard, fingerprint], await_build = True)
     except:
-        print "circuit build failed."
+        print "circuit build failed", sys.exc_info()
         return
     def attach_stream(stream):
         delta = time.time() - start
@@ -46,15 +47,15 @@ def test_exit(exit, address):
         if stream.status == 'NEW' and stream.purpose == 'USER':
             controller.attach_stream(stream.id, circuit_id)
         if stream.status == 'DETACHED':
-            record_exit_result(exit.fingerprint, address, stream.reason, delta)
+            record_exit_result(fingerprint, address, stream.reason, delta)
         if stream.status == 'SUCCEEDED':
-            record_exit_result(exit.fingerprint, address, stream.status, delta)
+            record_exit_result(fingerprint, address, stream.status, delta)
     try:
         controller.add_event_listener(attach_stream, stem.control.EventType.STREAM)
         controller.set_conf('__LeaveStreamsUnattached', '1')
         test_http_request(address)
     except:
-        print "error: ", sys.exc_info()[0]
+        print "error: ", sys.exc_info()
     finally:
         controller.remove_event_listener(attach_stream)
         controller.reset_conf('__LeaveStreamsUnattached')
@@ -70,7 +71,7 @@ def test_exits(exits, addresses, repeats):
                 test_exit(exits[i], address)
 
 def test_all_exits(addresses, repeats = 1):
-    exits = get_exits()
+    exits = get_exit_fingerprints()
     test_exits(exits, addresses, repeats)
 
 #ExcludeExitNodes node,node,...

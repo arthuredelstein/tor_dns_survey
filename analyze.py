@@ -40,4 +40,5 @@ def build_table(timeout_rates):
             s += "\t".join(headers) + "\n"
         s += "\t".join([unicode(relay.get(header, "")) for header in headers]) + "\n"
     with open("relay_timeout_table.txt", "w") as f:
-        f.write(s.encode('ascii', 'ignore')
+        f.write(s.encode('ascii', 'ignore'))
+
