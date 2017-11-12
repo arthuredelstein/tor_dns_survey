@@ -3,11 +3,13 @@ import socks
 import sys
 import time
 import datetime
+import json
+import urllib2
 
 guard = "F6740DEABFD5F62612FA025A5079EA72846B1F67"
 controller = stem.control.Controller.from_port(port = 9051)
-
-#exit_results = {}
+#controller.set_conf("CircuitStreamTimeout", "10")
+exit_results = {}
 
 def record_exit_result(fingerprint, address, result, delta):
     if not exit_results.has_key(address):
@@ -22,12 +24,11 @@ def get_exit_fingerprints():
     exits = filter(lambda relay: relay.exit_policy.can_exit_to(port=80), relays)
     return map(lambda exit: exit.fingerprint, exits)
 
-
 def test_http_request(address):
-    """Attempt to connect to example.com through tor proxy,
-       using remote DNS."""
+    """   Attempt to connect to example.com through tor proxy,
+    using remote DNS."""
     s = socks.socksocket()
-    s.settimeout(102)
+    s.settimeout(12)
     s.set_proxy(socks.SOCKS5, "localhost", 9050, True)
     s.connect((address, 80))
     s.sendall("GET / HTTP/1.1\nHost: www.example.com\n\n")
@@ -67,11 +68,45 @@ def test_exits(exits, addresses, repeats):
     for j in range(repeats):
         for address in addresses:
             for i in range(n):
-                print "\n* Exit", i, "/", n, "repeat", j
+                print "Repeat", j, "\n* Exit", i, "/", n, "(" + address + ") " + exits[i]
                 test_exit(exits[i], address)
 
-def test_all_exits(addresses, repeats = 1):
+def write_json(filestem, data):
+    now = datetime.datetime.now().strftime("%Y%m%d_%H%M");
+    with open(filestem + "_" + now + ".json", "w") as f:
+        f.write(json.dumps(data))
+
+def relay_data():
+    url = "https://onionoo.torproject.org/details?type=relay&flag=exit&fields=nickname,fingerprint,as_name,country_name,contact,platform,or_addresses,bandwidth_rate,consensus_weight"
+    response = urllib2.urlopen(url)
+    data = json.load(response)
+    return data["relays"]
+
+def test_all_exits(addresses = ["example.com", "93.184.216.34"], repeats = 5):
+    relays = relay_data()
     exits = get_exit_fingerprints()
     test_exits(exits, addresses, repeats)
+    time.sleep(20)
+    exit_results["_relays"] = relays
+    print(exit_results)
+    write_json("../all_exit_results/exit_results", exit_results);
 
 #ExcludeExitNodes node,node,...
+special_exits = [
+    "204DFD2A2C6A0DC1FA0EACB495218E0B661704FD", # HaveHeart
+    "77131D7E2EC1CA9B8D737502256DA9103599CE51", # CriticalMass
+    "1D3174338A1131A53E098443E76E1103CDED00DC", # criticalmass
+    "7BFB908A3AA5B491DA4CA72CCBEE0E1F2A939B55", # sofia
+    "09FA8B4F665AD65D2C2A49870F1AA3BA8811E449", # StanMarsh
+    "335746A6DEB684FABDF3FC5835C3898F05C5A5A8", # KyleBroflovksi
+    "B0279A521375F3CB2AE210BDBFC645FDD2E1973A", # chulak
+    "0593F5255316748247EBA76353A3A61F62224903", # novatorrelay
+    "696ABFA60C2FEA676FAF2DC2DA58A6D09FDBF78C", # HorstHanfblatt
+    "A9EBCBCB0EC01FEE8480C02214E4120B1C17ACF7", # labaudric
+    "D9F004C4664E9EE5AED955F91A67A5405531F33C"  # SophieScholl
+]
+
+def test_special_exits():
+    test_exits(special_exits, ["example.com", "93.184.216.34"], 5)
+
+
