@@ -8,6 +8,7 @@ import urllib2
 
 guard = "F6740DEABFD5F62612FA025A5079EA72846B1F67"
 controller = stem.control.Controller.from_port(port = 9051)
+controller.authenticate("bilboBaggins789")
 #controller.set_conf("CircuitStreamTimeout", "10")
 exit_results = {}
 
@@ -73,16 +74,19 @@ def test_exits(exits, addresses, repeats):
 
 def write_json(filestem, data):
     now = datetime.datetime.now().strftime("%Y%m%d_%H%M");
+    jsonStr = json.dumps(data)
     with open(filestem + "_" + now + ".json", "w") as f:
-        f.write(json.dumps(data))
+        f.write(jsonStr)
+    with open(filestem + "_latest.json", "w") as f:
+        f.write(jsonStr)
 
 def relay_data():
-    url = "https://onionoo.torproject.org/details?type=relay&flag=exit&fields=nickname,fingerprint,as_name,country_name,contact,platform,or_addresses,bandwidth_rate,consensus_weight"
+    url = "https://onionoo.torproject.org/details?type=relay&flag=exit&fields=nickname,fingerprint,as_name,country_name,contact,platform,or_addresses,bandwidth_rate,exit_probability"
     response = urllib2.urlopen(url)
     data = json.load(response)
     return data["relays"]
 
-def test_all_exits(addresses = ["example.com", "93.184.216.34"], repeats = 5):
+def test_all_exits(addresses = ["example.com", "93.184.216.34"], repeats = 10):
     relays = relay_data()
     exits = get_exit_fingerprints()
     test_exits(exits, addresses, repeats)
@@ -94,16 +98,17 @@ def test_all_exits(addresses = ["example.com", "93.184.216.34"], repeats = 5):
 #ExcludeExitNodes node,node,...
 special_exits = [
     "204DFD2A2C6A0DC1FA0EACB495218E0B661704FD", # HaveHeart
-    "77131D7E2EC1CA9B8D737502256DA9103599CE51", # CriticalMass
-    "1D3174338A1131A53E098443E76E1103CDED00DC", # criticalmass
-    "7BFB908A3AA5B491DA4CA72CCBEE0E1F2A939B55", # sofia
-    "09FA8B4F665AD65D2C2A49870F1AA3BA8811E449", # StanMarsh
-    "335746A6DEB684FABDF3FC5835C3898F05C5A5A8", # KyleBroflovksi
-    "B0279A521375F3CB2AE210BDBFC645FDD2E1973A", # chulak
+#    "77131D7E2EC1CA9B8D737502256DA9103599CE51", # CriticalMass
+#    "1D3174338A1131A53E098443E76E1103CDED00DC", # criticalmass
+#    "7BFB908A3AA5B491DA4CA72CCBEE0E1F2A939B55", # sofia
+#    "09FA8B4F665AD65D2C2A49870F1AA3BA8811E449", # StanMarsh
+#    "335746A6DEB684FABDF3FC5835C3898F05C5A5A8", # KyleBroflovksi
+#    "B0279A521375F3CB2AE210BDBFC645FDD2E1973A", # chulak
     "0593F5255316748247EBA76353A3A61F62224903", # novatorrelay
-    "696ABFA60C2FEA676FAF2DC2DA58A6D09FDBF78C", # HorstHanfblatt
-    "A9EBCBCB0EC01FEE8480C02214E4120B1C17ACF7", # labaudric
-    "D9F004C4664E9EE5AED955F91A67A5405531F33C"  # SophieScholl
+#    "696ABFA60C2FEA676FAF2DC2DA58A6D09FDBF78C", # HorstHanfblatt
+#    "A9EBCBCB0EC01FEE8480C02214E4120B1C17ACF7", # labaudric
+#    "D9F004C4664E9EE5AED955F91A67A5405531F33C"  # SophieScholl
+    "366E36894AF7ED5AEAE3D26FBEBD3FA29AA34FDD" #SentriesExit2
 ]
 
 def test_special_exits():
