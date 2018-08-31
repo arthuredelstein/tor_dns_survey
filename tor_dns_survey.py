@@ -43,7 +43,7 @@ def test_exit(fingerprint, address):
     except:
         print "circuit build failed", sys.exc_info()
         delta = time.time() - start
-        record_exit_result(fingerprint, address, sys.exc_info()[1]
+        record_exit_result(fingerprint, address, sys.exc_info()[1])
         return
     def attach_stream(stream):
         delta = time.time() - start
