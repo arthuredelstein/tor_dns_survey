@@ -42,6 +42,8 @@ def test_exit(fingerprint, address):
         circuit_id = controller.new_circuit([guard, fingerprint], await_build = True)
     except:
         print "circuit build failed", sys.exc_info()
+        delta = time.time() - start
+        record_exit_result(fingerprint, address, sys.exc_info()[1]
         return
     def attach_stream(stream):
         delta = time.time() - start
@@ -58,6 +60,7 @@ def test_exit(fingerprint, address):
         test_http_request(address)
     except:
         print "error: ", sys.exc_info()
+        record_exit_result(fingerprint, address, sys.exc_info()[1], time.time() - start)
     finally:
         controller.remove_event_listener(attach_stream)
         controller.reset_conf('__LeaveStreamsUnattached')
