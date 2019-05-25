@@ -28,7 +28,7 @@ def relay_data():
     return data["relays"]
 
 async def launch_tor(reactor):
-    tor = await txtorcon.launch(reactor, progress_updates=print, data_directory="./tor_data", tor_binary='/home/arthur/tor/src/app/tor')
+    tor = await txtorcon.launch(reactor, progress_updates=print, data_directory="./tor_data")
     config = await tor.get_config()
     state = await tor.create_state()
     socks = config.socks_endpoint(reactor)
