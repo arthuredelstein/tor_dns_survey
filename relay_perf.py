@@ -8,6 +8,7 @@ import urllib.request
 
 from twisted.internet import asyncioreactor
 from twisted.internet.defer import ensureDeferred, Deferred
+from twisted.internet.endpoints import TCP4ClientEndpoint
 from twisted.internet.task import react
 from twisted.web.client import readBody
 
@@ -28,10 +29,12 @@ def relay_data():
     return data["relays"]
 
 async def launch_tor(reactor):
-    tor = await txtorcon.launch(reactor, progress_updates=print, data_directory="./tor_data")
+    control_ep = TCP4ClientEndpoint(reactor, "localhost", 9051)
+    tor = await txtorcon.connect(reactor, control_ep, password_function = lambda: "bilboBaggins789")
+    #tor = await txtorcon.launch(reactor, progress_updates=print, data_directory="./tor_data")
     config = await tor.get_config()
     state = await tor.create_state()
-    socks = config.socks_endpoint(reactor)
+    socks = config.socks_endpoint(reactor, port = 9050)
     print("Connected to tor {}".format(tor.version))
     return [tor, config, state, socks]
 
