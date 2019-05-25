@@ -117,6 +117,8 @@ special_exits = [
 
 def test_special_exits():
     test_exits(special_exits, ["example.com", "93.184.216.34"], 1)
+    relays = relay_data()
+    exit_results["_relays"] = relays
     print(exit_results)
     write_json("../all_exit_results/exit_results", exit_results);
 
