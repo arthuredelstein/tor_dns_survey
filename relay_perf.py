@@ -97,6 +97,7 @@ async def _main(reactor):
     [tor, config, state, socks] = await launch_tor(reactor)
     config.CircuitBuildTimeout = 10
     config.SocksTimeout = 10
+    config.CircuitStreamTimeout = 10
     config.save()
     routers = state.all_routers
 
