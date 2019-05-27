@@ -49,13 +49,13 @@ async def time_two_hop(reactor, state, socks, guard, exit_node):
     t_stop = time.time()
     return t_stop - t_start
 
-def record_exit_result(exit_results, fingerprint, address, result, delta):
-    if address not in exit_results:
-        exit_results[address] = {}
-    if fingerprint not in exit_results[address]:
-        exit_results[address][fingerprint] = []
+def record_result(results, fingerprint, address, result, delta):
+    if address not in results:
+        results[address] = {}
+    if fingerprint not in results[address]:
+        results[address][fingerprint] = []
     dateString = str(datetime.datetime.now())
-    exit_results[address][fingerprint].append((result, dateString, delta))
+    results[address][fingerprint].append((result, dateString, delta))
 
 async def test_exits(reactor, state, socks, guard, exits, repeats):
     exit_results = {}
@@ -71,9 +71,27 @@ async def test_exits(reactor, state, socks, guard, exits, repeats):
                 result = "SUCCEEDED"
             except Exception as err:
                 result = str(err)
-            record_exit_result(exit_results, exit_node.id_hex, "example.com", result, delta)
+            record_result(exit_results, exit_node.id_hex, "example.com", result, delta)
             print('%d/%d: %d/%d' % (i, repeats, j, n), exit_node.id_hex, ":", exit_results["example.com"][exit_node.id_hex])
     return exit_results
+
+async def test_relays(reactor, state, socks, relays, exit_node, repeats):
+    relay_results = {}
+    n = len(relays)
+    for i in range(repeats):
+        j = 0
+        for relay in relays:
+            j = j + 1
+            result = ""
+            delta = -1
+            try:
+                delta = await time_two_hop(reactor, state, socks, relay, exit_node)
+                result = "SUCCEEDED"
+            except Exception as err:
+                result = str(err)
+            record_result(relay_results, relay.id_hex, "example.com", result, delta)
+            print('%d/%d: %d/%d' % (i, repeats, j, n), relay.id_hex, ":", relay_results["example.com"][relay.id_hex])
+    return relay_results
 
 async def _main(reactor):
     [tor, config, state, socks] = await launch_tor(reactor)
@@ -81,11 +99,18 @@ async def _main(reactor):
     config.SocksTimeout = 10
     config.save()
     routers = state.all_routers
+
     guard1 = state.routers_by_hash["$F6740DEABFD5F62612FA025A5079EA72846B1F67"]
     exits = list(filter(lambda router: "exit" in router.flags, routers))
     exit_results = await test_exits(reactor, state, socks, guard1, exits, 10)
     exit_results["_relays"] = relay_data()
     write_json("../all_exit_results/exit_results", exit_results)
+
+    exit_node = state.routers_by_hash["$1AE949967F82BBE7534A3D6BA77A7EBE1CED4369"]
+    relays = list(filter(lambda router: "exit" not in router.flags, routers))
+    relay_results = await test_relays(reactor, state, socks, relays, exit_node, 4)
+    relay_results["_relays"] = relay_data()
+    write_json("../all_relay_results/relay_results", relay_results)
 
 def main():
     return react(
