@@ -21,8 +21,10 @@ def write_json(filestem, data):
     with open(filestem + "_latest.json", "w") as f:
         f.write(jsonStr)
 
-def relay_data():
-    url = "https://onionoo.torproject.org/details?type=relay&flag=exit&fields=nickname,fingerprint,as_name,country_name,contact,platform,or_addresses,bandwidth_rate,exit_probability"
+def relay_data(exits):
+    url = "https://onionoo.torproject.org/details?type=relay&fields=nickname,fingerprint,as_name,country_name,contact,platform,or_addresses,bandwidth_rate,exit_probability"
+    if exits:
+        url += "&flag=exit"
     req = urllib.request.Request(url)
     response = urllib.request.urlopen(req).read()
     data = json.loads(response.decode('utf-8'))
@@ -104,13 +106,13 @@ async def _main(reactor):
     guard1 = state.routers_by_hash["$F6740DEABFD5F62612FA025A5079EA72846B1F67"]
     exits = list(filter(lambda router: "exit" in router.flags, routers))
     exit_results = await test_exits(reactor, state, socks, guard1, exits, 10)
-    exit_results["_relays"] = relay_data()
+    exit_results["_relays"] = relay_data(True)
     write_json("../all_exit_results/exit_results", exit_results)
 
     exit_node = state.routers_by_hash["$1AE949967F82BBE7534A3D6BA77A7EBE1CED4369"]
     relays = list(filter(lambda router: "exit" not in router.flags, routers))
     relay_results = await test_relays(reactor, state, socks, relays, exit_node, 4)
-    relay_results["_relays"] = relay_data()
+    relay_results["_relays"] = relay_data(False)
     write_json("../all_relay_results/relay_results", relay_results)
 
 def main():
