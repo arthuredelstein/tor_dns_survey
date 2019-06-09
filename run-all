@@ -1,0 +1,3 @@
+#!/usr/bin/env python3
+import relay_perf
+relay_perf.main()
