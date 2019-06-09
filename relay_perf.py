@@ -36,7 +36,7 @@ async def launch_tor(reactor):
     #tor = await txtorcon.launch(reactor, progress_updates=print, data_directory="./tor_data")
     config = await tor.get_config()
     state = await tor.create_state()
-    socks = config.socks_endpoint(reactor, port = 9050)
+    socks = await config.create_socks_endpoint(reactor, "9050")
     print("Connected to tor {}".format(tor.version))
     return [tor, config, state, socks]
 
