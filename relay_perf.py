@@ -74,7 +74,7 @@ async def test_exits(reactor, state, socks, guard, exits, repeats):
             except Exception as err:
                 result = str(err)
             record_result(exit_results, exit_node.id_hex, "example.com", result, delta)
-            print('%d/%d: %d/%d' % (i, repeats, j, n), exit_node.id_hex, ":", exit_results["example.com"][exit_node.id_hex])
+            print('%d/%d: %d/%d' % (i+1, repeats, j, n), exit_node.id_hex, ":", exit_results["example.com"][exit_node.id_hex])
     return exit_results
 
 async def test_relays(reactor, state, socks, relays, exit_node, repeats):
@@ -92,7 +92,7 @@ async def test_relays(reactor, state, socks, relays, exit_node, repeats):
             except Exception as err:
                 result = str(err)
             record_result(relay_results, relay.id_hex, "example.com", result, delta)
-            print('%d/%d: %d/%d' % (i, repeats, j, n), relay.id_hex, ":", relay_results["example.com"][relay.id_hex])
+            print('%d/%d: %d/%d' % (i+1, repeats, j, n), relay.id_hex, ":", relay_results["example.com"][relay.id_hex])
     return relay_results
 
 async def _main(reactor):
