@@ -111,7 +111,7 @@ async def _main(reactor):
 
     exit_node = state.routers_by_hash["$1AE949967F82BBE7534A3D6BA77A7EBE1CED4369"]
     relays = list(filter(lambda router: "exit" not in router.flags, routers))
-    relay_results = await test_relays(reactor, state, socks, relays, exit_node, 4)
+    relay_results = await test_relays(reactor, state, socks, relays, exit_node, 3)
     relay_results["_relays"] = relay_data(False)
     write_json("../all_relay_results/relay_results", relay_results)
 
