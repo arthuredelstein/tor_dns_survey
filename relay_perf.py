@@ -81,13 +81,16 @@ async def test_relays(reactor, state, socks, relays, exits, repeats):
                       relay.id_hex, "->", exit_node.id_hex, ":", results["example.com"][relay_key])
     return results
 
-async def _main(reactor):
+async def _main(reactor, fingerprint):
     [tor, config, state, socks] = await launch_tor(reactor)
     config.CircuitBuildTimeout = 10
     config.SocksTimeout = 10
     config.CircuitStreamTimeout = 10
     config.save()
-    routers = state.all_routers
+    if fingerprint == None:
+        routers = state.all_routers
+    else:
+        routers = [state.routers_by_hash[fingerprint]]
 
     guard1 = state.routers_by_hash["$F6740DEABFD5F62612FA025A5079EA72846B1F67"]
     exits = list(filter(lambda router: "exit" in router.flags, routers))
@@ -101,12 +104,12 @@ async def _main(reactor):
     relay_results["_relays"] = relay_data(False)
     write_json("../all_relay_results/relay_results", relay_results)
 
-def main():
+def main(fingerprint):
     return react(
         lambda reactor: ensureDeferred(
-            _main(reactor)
+            _main(reactor, fingerprint)
         )
     )
 
 if __name__ == '__main__':
-    main()
+    main(None)

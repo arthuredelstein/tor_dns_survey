@@ -1,0 +1,6 @@
+#!/usr/bin/env python3
+import sys
+import relay_perf
+fingerprint = "$" + sys.argv[1]
+print(fingerprint)
+relay_perf.main(fingerprint)
