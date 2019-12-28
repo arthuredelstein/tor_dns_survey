@@ -7,10 +7,9 @@ import txtorcon
 import urllib.request
 
 from twisted.internet import asyncioreactor
-from twisted.internet.defer import ensureDeferred, Deferred
+from twisted.internet.defer import ensureDeferred
 from twisted.internet.endpoints import TCP4ClientEndpoint
 from twisted.internet.task import react
-from twisted.web.client import readBody
 
 def write_json(filestem, data):
     now = datetime.datetime.now().strftime("%Y%m%d_%H%M");
