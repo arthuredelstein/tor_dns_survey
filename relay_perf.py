@@ -39,16 +39,50 @@ async def launch_tor(reactor):
     print("Connected to tor {}".format(tor.version))
     return [tor, config, state, socks]
 
-async def time_two_hop(reactor, state, socks, guard, exit_node):
-    circuit = await state.build_circuit(routers = [guard, exit_node], using_guards = False)
-    #circuit = await state.build_circuit(routers = [exit_node], using_guards = False)
-    await circuit.when_built()
-    # print("Circuit", circuit.id, circuit.path)
+async def build_two_hop_circuit(state, guard, exit_node):
+    success = None
+    error = ""
     t_start = time.time()
-    agent = circuit.web_agent(reactor, socks)
-    resp = await agent.request(b'HEAD', b"http://example.com")
+    try:
+        circuit = await state.build_circuit(routers = [guard, exit_node], using_guards = False)
+        await circuit.when_built()
+        success = True
+    except Exception as err:
+        error = str(err)
+        success = False
     t_stop = time.time()
-    return t_stop - t_start
+    return { "circuit" : circuit,
+             "success" : success,
+             "delta" : t_stop - t_start,
+             "error" : error }
+
+async def request_over_circuit(reactor, socks, circuit):
+    success = None
+    error = ""
+    t_start = time.time()
+    try:
+        agent = circuit.web_agent(reactor, socks)
+        resp = await agent.request(b'HEAD', b"http://example.com")
+        success = True
+    except Exception as err:
+        error = str(err)
+        success = False
+    t_stop = time.time()
+    return { "success" : success,
+             "delta" : t_stop - t_start,
+             "error" : error }
+
+async def time_two_hop(reactor, state, socks, guard, exit_node):
+    circuit_results = await build_two_hop_circuit(state, guard, exit_node)
+    if circuit_results["success"]:
+        request_results = await request_over_circuit(reactor, socks, circuit_results["circuit"])
+        return { "delta_request": request_results["delta"],
+                 "delta_circuit": circuit_results["delta"],
+                 "result": ("SUCCEEDED" if request_results["success"] else ("Request error: " + request_results["error"])) }
+    else:
+        return { "delta_request": -1,
+                 "delta_circuit": circuit_results["delta"],
+                 "result": ("Circuit error: " + circuit_results["error"]) }
 
 def record_result(results, fingerprint, address, result, delta):
     if address not in results:
@@ -68,17 +102,11 @@ async def test_relays(reactor, state, socks, relays, exits, repeats):
         for relay in relays:
             for exit_node in exits:
                 j = j + 1
-                result = ""
-                delta = -1
-                try:
-                    delta = await time_two_hop(reactor, state, socks, relay, exit_node)
-                    result = "SUCCEEDED"
-                except Exception as err:
-                    result = str(err)
+                result = await time_two_hop(reactor, state, socks, relay, exit_node)
                 relay_key = relay.id_hex if (nr > 1) else exit_node.id_hex
-                record_result(results, relay_key, "example.com", result, delta)
+                record_result(results, relay_key, "example.com", result["result"], result["delta_request"])
                 print('%d/%d: %d/%d' % (i+1, repeats, j, n),
-                      relay.id_hex, "->", exit_node.id_hex, ":", result, delta)
+                      relay.id_hex, "->", exit_node.id_hex, ":", result)
     return results
 
 async def _main(reactor, fingerprint):
