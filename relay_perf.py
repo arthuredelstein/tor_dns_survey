@@ -120,7 +120,7 @@ async def _main(reactor, fingerprint):
     else:
         routers = [state.routers_by_hash[fingerprint]]
 
-    guard1 = state.routers_by_hash["$CB4EBE9C475A60A5F2CDA92C83CE093BD945D940"]
+    guard1 = state.routers_by_hash["$6C251FA7F45E9DEDF5F69BA3D167F6BA736F49CD"]
     exits = list(filter(lambda router: "exit" in router.flags, routers))
     exit_results = await test_relays(reactor, state, socks, [guard1], exits, 10)
     exit_results["_relays"] = relay_data(True)
