@@ -13,7 +13,7 @@ from twisted.internet.task import react
 
 def write_json(filestem, data):
     now = datetime.datetime.now().strftime("%Y%m%d_%H%M");
-    print(data)
+    #print(data)
     jsonStr = json.dumps(data)
     with open(filestem + "_" + now + ".json", "w") as f:
         f.write(jsonStr)
@@ -78,7 +78,7 @@ async def test_relays(reactor, state, socks, relays, exits, repeats):
                 relay_key = relay.id_hex if (nr > 1) else exit_node.id_hex
                 record_result(results, relay_key, "example.com", result, delta)
                 print('%d/%d: %d/%d' % (i+1, repeats, j, n),
-                      relay.id_hex, "->", exit_node.id_hex, ":", results["example.com"][relay_key])
+                      relay.id_hex, "->", exit_node.id_hex, ":", result, delta)
     return results
 
 async def _main(reactor, fingerprint):
