@@ -56,13 +56,13 @@ async def build_two_hop_circuit(state, guard, exit_node):
              "delta" : t_stop - t_start,
              "error" : error }
 
-async def request_over_circuit(reactor, socks, circuit):
+async def request_over_circuit(reactor, socks, circuit, bareIP):
     success = None
     error = ""
     t_start = time.time()
     try:
         agent = circuit.web_agent(reactor, socks)
-        resp = await agent.request(b'HEAD', b"http://example.com")
+        resp = await agent.request(b'HEAD', b"http://93.184.216.34" if bareIP else b"http://example.com")
         success = True
     except Exception as err:
         error = str(err)
@@ -72,10 +72,10 @@ async def request_over_circuit(reactor, socks, circuit):
              "delta" : t_stop - t_start,
              "error" : error }
 
-async def time_two_hop(reactor, state, socks, guard, exit_node):
+async def time_two_hop(reactor, state, socks, guard, exit_node, bareIP):
     circuit_results = await build_two_hop_circuit(state, guard, exit_node)
     if circuit_results["success"]:
-        request_results = await request_over_circuit(reactor, socks, circuit_results["circuit"])
+        request_results = await request_over_circuit(reactor, socks, circuit_results["circuit"], bareIP)
         return { "delta_request": request_results["delta"],
                  "delta_circuit": circuit_results["delta"],
                  "result": ("SUCCEEDED" if request_results["success"] else ("Request error: " + request_results["error"])) }
@@ -92,7 +92,7 @@ def record_result(results, fingerprint, address, result, delta):
     dateString = str(datetime.datetime.now())
     results[address][fingerprint].append((result, dateString, delta))
 
-async def test_relays(reactor, state, socks, relays, exits, repeats):
+async def test_relays(reactor, state, socks, relays, exits, repeats, bareIP):
     results = {}
     nr = len(relays)
     ne = len(exits)
@@ -102,14 +102,14 @@ async def test_relays(reactor, state, socks, relays, exits, repeats):
         for relay in relays:
             for exit_node in exits:
                 j = j + 1
-                result = await time_two_hop(reactor, state, socks, relay, exit_node)
+                result = await time_two_hop(reactor, state, socks, relay, exit_node, bareIP)
                 relay_key = relay.id_hex if (nr > 1) else exit_node.id_hex
                 record_result(results, relay_key, "example.com", result["result"], result["delta_request"])
                 print('%d/%d: %d/%d' % (i+1, repeats, j, n),
                       relay.id_hex, "->", exit_node.id_hex, ":", result)
     return results
 
-async def _main(reactor, fingerprint):
+async def _main(reactor, fingerprint, bareIP):
     [tor, config, state, socks] = await launch_tor(reactor)
     config.CircuitBuildTimeout = 10
     config.SocksTimeout = 10
@@ -122,22 +122,22 @@ async def _main(reactor, fingerprint):
 
     guard1 = state.routers_by_hash["$6C251FA7F45E9DEDF5F69BA3D167F6BA736F49CD"]
     exits = list(filter(lambda router: "exit" in router.flags, routers))
-    exit_results = await test_relays(reactor, state, socks, [guard1], exits, 10)
+    exit_results = await test_relays(reactor, state, socks, [guard1], exits, 10, bareIP)
     exit_results["_relays"] = relay_data(True)
     write_json("../all_exit_results/exit_results", exit_results)
 
     exit_node = state.routers_by_hash["$7BD7B547676257EF147F5D5B7A5B15F840F4B579"]
     relays = list(filter(lambda router: "exit" not in router.flags, routers))
-    relay_results = await test_relays(reactor, state, socks, relays, [exit_node], 3)
+    relay_results = await test_relays(reactor, state, socks, relays, [exit_node], 3, False)
     relay_results["_relays"] = relay_data(False)
     write_json("../all_relay_results/relay_results", relay_results)
 
-def main(fingerprint):
+def main(fingerprint, bareIP):
     return react(
         lambda reactor: ensureDeferred(
-            _main(reactor, fingerprint)
+            _main(reactor, fingerprint, bareIP)
         )
     )
 
 if __name__ == '__main__':
-    main(None)
+    main(None, False)

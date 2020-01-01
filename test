@@ -2,5 +2,9 @@
 import sys
 import relay_perf
 fingerprint = "$" + sys.argv[1]
+bareIP = False
+if len(sys.argv) >= 3:
+    if sys.argv[2] == "IP":
+        bareIP = True
 print(fingerprint)
-relay_perf.main(fingerprint)
+relay_perf.main(fingerprint, bareIP)
