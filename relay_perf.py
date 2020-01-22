@@ -40,6 +40,7 @@ async def launch_tor(reactor):
     return [tor, config, state, socks]
 
 async def build_two_hop_circuit(state, guard, exit_node):
+    circuit = {}
     success = None
     error = ""
     t_start = time.time()
